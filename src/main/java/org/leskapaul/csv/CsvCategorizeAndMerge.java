@@ -223,7 +223,6 @@ public class CsvCategorizeAndMerge {
     public static class CsvOrganizerConfig {
         private LinkedHashMap<String, Set<String>> columnNameToAliases = new LinkedHashMap<>();
         private List<CsvOrganizerCategoryConfig> categoryConfigs = new ArrayList<>();
-        private LinkedHashMap<String, Set<CsvOrganizerCategoryConfig>> columnNameToCategoryRegexes;
         private String defaultCategoryName;
         private String sortColumnName;
         private SortType sortType;

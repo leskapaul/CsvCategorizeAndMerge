@@ -1,0 +1,18 @@
+# this configuration is for merging multiple transaction csvs into a single one with
+# transactions grouped into categories
+sortType: ASC
+sortColumnName: Date
+defaultCategoryName: Discretionary
+columnNameToAliases:
+  - Date
+  - Description:
+      - transaction
+  - Category
+  - Amount
+columnNameToCategoryConfig:
+  - Description:
+      category: Groceries
+      regexes:
+        - "Shoprite.*"
+        - "rock farmers market.*"
+        - "99 ranch market.*"
