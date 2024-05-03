@@ -26,7 +26,8 @@ public class CsvOrganizingTransformerTest {
 
     @Test
     public void testSimpleExample() throws IOException {
-        CsvCategorizeAndMerge.CsvOrganizerConfig config = CsvCategorizeAndMergeCli.loadConfig("/testConfig.yaml");
+        CsvCategorizeAndMerge.CsvOrganizerConfig config = CsvCategorizeAndMergeCli
+                .loadConfig(getClass().getResourceAsStream("/testConfig.yaml"));
 
         try (CSVParser csvParser = CSVParser.parse(getClass().getResourceAsStream("/testCsv.csv"),
                 StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {

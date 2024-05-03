@@ -1,18 +1,69 @@
 package org.leskapaul.csv;
 
+import org.apache.commons.csv.CSVFormat;
+import org.apache.commons.csv.CSVParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.yaml.snakeyaml.Yaml;
 
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class CsvCategorizeAndMergeCli {
 
     private static final Logger LOG = LogManager.getLogger(CsvCategorizeAndMergeCli.class);
+
+    public static void main(String[] args) {
+        LOG.info("This program expects the following arguments: <path to yaml config> <one or more input csv files, separated by a space>");
+        LOG.debug("called with args: {}", Stream.of(args).collect(Collectors.toList()));
+
+        if (args.length < 2) {
+            LOG.error("this program requires at least two arguments");
+            return;
+        }
+
+        CsvCategorizeAndMerge.CsvOrganizerConfig config;
+        try {
+            config = CsvCategorizeAndMergeCli.loadConfig(new FileInputStream(args[0]));
+        } catch (FileNotFoundException e) {
+            throw new RuntimeException("failed to load config file " + args[0], e);
+        }
+
+        List<CSVParser> csvParsers = new ArrayList<>();
+        for (int i = 1; i < args.length; i++) {
+            try {
+                CSVParser csvParser = CSVParser.parse(new FileInputStream(args[i]),
+                        StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader());
+                csvParsers.add(csvParser);
+            } catch (IOException e) {
+                throw new RuntimeException("failed to load csv file " + args[i], e);
+            }
+        }
+
+        try {
+            List<CsvCategorizeAndMerge.CategoryCsvLines> lines =
+                    new CsvCategorizeAndMerge().organizeCsvLines(csvParsers, config);
+            CsvCategorizeAndMergeCli.printCsv(config, lines);
+        } finally {
+            for (CSVParser parser: csvParsers) {
+                try {
+                    parser.close();
+                } catch (IOException e) {
+                    LOG.warn("failed to close csv file", e);
+                }
+            }
+        }
+    }
 
     public static void printCsv(CsvCategorizeAndMerge.CsvOrganizerConfig config,
                                 List<CsvCategorizeAndMerge.CategoryCsvLines> lines) {
@@ -41,9 +92,20 @@ public class CsvCategorizeAndMergeCli {
         LOG.info("csv result ->\n{}", sb);
     }
 
-    public static CsvCategorizeAndMerge.CsvOrganizerConfig loadConfig(String resourceToLoadAsStream) {
+    public static CsvCategorizeAndMerge.CsvOrganizerConfig loadConfig(InputStream inputStreamForConfig) {
         Yaml yaml = new Yaml();
-        Map configAsMap = yaml.load(CsvCategorizeAndMergeCli.class.getResourceAsStream(resourceToLoadAsStream));
+        Map configAsMap;
+        try {
+            configAsMap = yaml.load(inputStreamForConfig);
+        } catch (RuntimeException e) {
+            throw new RuntimeException("failed to load yaml config", e);
+        } finally {
+            try {
+                inputStreamForConfig.close();
+            } catch (IOException e) {
+                throw new RuntimeException("failed to close input stream for yaml config", e);
+            }
+        }
 
         String sortColumnName = (String) configAsMap.get("sortColumnName");
         String sortTypeAsStr = (String) configAsMap.get("sortType");
