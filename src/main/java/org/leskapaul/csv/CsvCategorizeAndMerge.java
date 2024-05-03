@@ -252,7 +252,7 @@ public class CsvCategorizeAndMerge {
             return sortType;
         }
 
-        public Map<String, Set<String>> getColumnNameToAliases() {
+        public LinkedHashMap<String, Set<String>> getColumnNameToAliases() {
             return columnNameToAliases;
         }
 
