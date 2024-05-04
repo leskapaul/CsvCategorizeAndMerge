@@ -34,7 +34,7 @@ public class CsvCategorizeAndMergeCli {
 
         CsvCategorizeAndMerge.CsvOrganizerConfig config;
         try {
-            config = CsvCategorizeAndMergeCli.loadConfig(new FileInputStream(args[0]));
+            config = loadConfig(new FileInputStream(args[0]));
         } catch (FileNotFoundException e) {
             throw new RuntimeException("failed to load config file " + args[0], e);
         }
@@ -53,7 +53,7 @@ public class CsvCategorizeAndMergeCli {
         try {
             List<CsvCategorizeAndMerge.CategoryCsvLines> lines =
                     new CsvCategorizeAndMerge().organizeCsvLines(csvParsers, config);
-            CsvCategorizeAndMergeCli.printCsv(config, lines);
+            printCsv(config, lines);
         } finally {
             for (CSVParser parser: csvParsers) {
                 try {

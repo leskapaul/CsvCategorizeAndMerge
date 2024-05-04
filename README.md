@@ -25,7 +25,7 @@ Date,Description,Amount,Running Bal.
 03/19/2024,"VERIZON DES:PAYMENTREC ID:XXXXX99999999 INDN:J DOE CO ID:XXXXX99999 WEB","-24.99","11,166.92"
 ```
 #### Input Configuration
-The following configuration can be used to handle different column names and categorization.
+The following configuration can be used to handle the different column names and categorization.
 ```yaml
 sortType: ASC
 sortColumnName: Date
@@ -68,3 +68,9 @@ Date, Description, Amount
 03/19/2024, VERIZON DES:PAYMENTREC ID:XXXXX99999999 INDN:J DOE CO ID:XXXXX99999 WEB, -24.99 
 ```
 
+## Usage
+Note: The following usage example references test files. Replace with your own files and have fun!
+```
+mvn package
+java -jar target/CsvCategorizeAndMerge-1.0-SNAPSHOT-jar-with-dependencies.jar src/test/resources/testConfig.yaml src/test/resources/testCsv.csv src/test/resources/testCsv2.csv
+```
