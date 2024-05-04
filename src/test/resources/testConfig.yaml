@@ -7,12 +7,20 @@ columnNameToAliases:
   - Date
   - Description:
       - transaction
-  - Category
   - Amount
+  - Category
 columnNameToCategoryConfig:
   - Description:
-      category: Groceries
-      regexes:
-        - "Shoprite.*"
-        - "rock farmers market.*"
-        - "99 ranch market.*"
+      - category: Groceries
+        regexes:
+          - "Shoprite.*"
+          - "rock farmers market.*"
+          - "99 ranch market.*"
+      - category: Utilities
+        regexes:
+          - ".*ridgewood water.*"
+          - "public service.*pseg.*"
+      - category: Data
+        regexes:
+          - "verizon.*"
+

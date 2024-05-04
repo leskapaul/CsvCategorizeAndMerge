@@ -82,7 +82,7 @@ public class CsvCategorizeAndMergeCli {
                 columnNamesInOrder.forEach(columnName -> {
                     String cellValue = csvRowAsMap.get(columnName);
                     if (sbForRow.length() > 0) { sbForRow.append(", "); }
-                    sbForRow.append(cellValue);
+                    sbForRow.append(cellValue == null ? "" : cellValue);
                 });
                 sb.append(sbForRow).append('\n');
             });
@@ -137,18 +137,20 @@ public class CsvCategorizeAndMergeCli {
                 Map.Entry categoryConfigAsMapEntry = (Map.Entry) ((Map) map).entrySet().stream().findFirst().get(); //(Map) categoryConfigs.get(key);
                 if (categoryConfigAsMapEntry != null) {
                     String columnName = (String) categoryConfigAsMapEntry.getKey();
-                    Map categoryConfigAsMap = (Map) categoryConfigAsMapEntry.getValue();
-                    String category = (String) categoryConfigAsMap.get("category");
-                    List<String> regexes = (List<String>) categoryConfigAsMap.get("regexes");
-                    if (columnName != null && category != null && regexes != null) {
-                        CsvCategorizeAndMerge.CsvOrganizerCategoryConfig categoryConfig =
-                                new CsvCategorizeAndMerge.CsvOrganizerCategoryConfig(category, columnName,
-                                        new HashSet<>(regexes));
-                        config.getCategoryConfigs().add(categoryConfig);
-                    } else {
-                        LOG.debug("ignoring incomplete config, columnName={}, category={}, regexes={}",
-                                columnName, category, regexes);
-                    }
+                    List<Map> categoryConfigsForColumn = (List<Map>) categoryConfigAsMapEntry.getValue();
+                    categoryConfigsForColumn.forEach(categoryConfigAsMap -> {
+                        String category = (String) categoryConfigAsMap.get("category");
+                        List<String> regexes = (List<String>) categoryConfigAsMap.get("regexes");
+                        if (columnName != null && category != null && regexes != null) {
+                            CsvCategorizeAndMerge.CsvOrganizerCategoryConfig categoryConfig =
+                                    new CsvCategorizeAndMerge.CsvOrganizerCategoryConfig(category, columnName,
+                                            new HashSet<>(regexes));
+                            config.getCategoryConfigs().add(categoryConfig);
+                        } else {
+                            LOG.debug("ignoring incomplete config, columnName={}, category={}, regexes={}",
+                                    columnName, category, regexes);
+                        }
+                    });
                 }
             });
         }

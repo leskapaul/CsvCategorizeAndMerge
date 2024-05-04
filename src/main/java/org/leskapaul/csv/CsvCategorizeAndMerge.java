@@ -57,8 +57,12 @@ public class CsvCategorizeAndMerge {
                 .map(CsvOrganizerCategoryConfig::getCategory).toList());
         categories.forEach(category -> {
             CategoryCsvLines categoryCsvLines = allCategoriesToLines.get(category);
-            sortCategoryCsvLines(categoryCsvLines, csvOrganizerConfig);
-            organizedCsvs.add(categoryCsvLines);
+            if (categoryCsvLines == null) {
+                LOG.debug("categoryCsvLines was null for category={}", category);
+            } else {
+                sortCategoryCsvLines(categoryCsvLines, csvOrganizerConfig);
+                organizedCsvs.add(categoryCsvLines);
+            }
         });
 
         return organizedCsvs;
@@ -123,7 +127,7 @@ public class CsvCategorizeAndMerge {
                 LOG.warn("skipping column unspecified by input config: {}", rawColumnName);
                 continue;
             }
-            LOG.trace("determined normalized column name {} for cell with column {}", normalizedColumnName, csvCell.getKey());
+            LOG.debug("determined normalized column name {} for cell with column {}", normalizedColumnName, csvCell.getKey());
 
             String safeCellValue =  csvCell.getValue() == null ? "" : csvCell.getValue().trim();
             if (category == null) {

@@ -9,6 +9,7 @@ import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -29,20 +30,35 @@ public class CsvOrganizingTransformerTest {
         CsvCategorizeAndMerge.CsvOrganizerConfig config = CsvCategorizeAndMergeCli
                 .loadConfig(getClass().getResourceAsStream("/testConfig.yaml"));
 
-        try (CSVParser csvParser = CSVParser.parse(getClass().getResourceAsStream("/testCsv.csv"),
-                StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader())) {
+        List<CSVParser> csvParsers = new ArrayList<>();
+        csvParsers.add(CSVParser.parse(getClass().getResourceAsStream("/testCsv.csv"),
+                StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader()));
+        csvParsers.add(CSVParser.parse(getClass().getResourceAsStream("/testCsv2.csv"),
+                StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader()));
+
+        try {
             List<CsvCategorizeAndMerge.CategoryCsvLines> lines =
-                    csvOrganizingTransformer.organizeCsvLines(Collections.singletonList(csvParser), config);
+                    csvOrganizingTransformer.organizeCsvLines(csvParsers, config);
             CsvCategorizeAndMergeCli.printCsv(config, lines);
             LOG.info("result has lines spanning {} categories: {}", lines.size(), lines);
 
-            assertEquals("expected lines spanning 2 categories", 2, lines.size());
+            assertEquals("expected lines spanning 4 categories", 4, lines.size());
             assertEquals("expected 3 lines for groceries", 3,
                     countLinesForCategory(lines, "Groceries"));
             assertEquals("expected 2 lines for discretionary", 2,
                     countLinesForCategory(lines, "Discretionary"));
-        }
+            assertEquals("expected 2 lines for utilities", 2,
+                    countLinesForCategory(lines, "Utilities"));
+            assertEquals("expected 2 lines for data", 1,
+                    countLinesForCategory(lines, "Data"));
 
+        } finally {
+            for (CSVParser csvParser : csvParsers) {
+                try { csvParser.close(); } catch (Exception e) {
+                    LOG.error("swallowing exception to close all parsers", e);
+                }
+            }
+        }
     }
 
 
