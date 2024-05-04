@@ -8,7 +8,6 @@ columnNameToAliases:
   - Description:
       - transaction
   - Amount
-  - Category
 columnNameToCategoryConfig:
   - Description:
       - category: Groceries
