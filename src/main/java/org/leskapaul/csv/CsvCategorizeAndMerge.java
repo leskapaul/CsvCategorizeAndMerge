@@ -5,7 +5,10 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
@@ -130,6 +133,7 @@ public class CsvCategorizeAndMerge {
             LOG.debug("determined normalized column name {} for cell with column {}", normalizedColumnName, csvCell.getKey());
 
             String safeCellValue =  csvCell.getValue() == null ? "" : csvCell.getValue().trim();
+            // determine category (if none found then default will be used)
             if (category == null) {
                 category = extractCategory(normalizedColumnName, safeCellValue, csvOrganizerConfig);
                 if (category != null) {
@@ -138,7 +142,7 @@ public class CsvCategorizeAndMerge {
                 }
             }
 
-            normalizedColumnToValue.put(normalizedColumnName, safeCellValue);
+            normalizedColumnToValue.put(normalizedColumnName, transformCellValue(normalizedColumnName, safeCellValue, csvOrganizerConfig));
         }
 
         if (category == null) {
@@ -150,6 +154,31 @@ public class CsvCategorizeAndMerge {
         modifiableList.add(normalizedColumnToValue);
         csvLine = new CategoryCsvLines(category, modifiableList);
         return csvLine;
+    }
+
+    private String transformCellValue(String normalizedColumnName, String safeCellValue, CsvOrganizerConfig csvOrganizerConfig) {
+        DateTransformerConfig dateTransformerConfig = csvOrganizerConfig.getColumnNameToDateTransformer().get(normalizedColumnName);
+        String cellValue = safeCellValue;
+        if (dateTransformerConfig != null) {
+            LOG.debug("for column={} and value={}, processing dateTransformer={}",
+                    normalizedColumnName, safeCellValue, dateTransformerConfig);
+
+            SimpleDateFormat outputFormat = new SimpleDateFormat(dateTransformerConfig.getOutputFormat());
+            List<SimpleDateFormat> inputFormats = dateTransformerConfig.getInputFormats().stream()
+                    .map(SimpleDateFormat::new).toList();
+
+            for (SimpleDateFormat inputFormat : inputFormats) {
+                try {
+                    Date parsedDate = inputFormat.parse(cellValue);
+                    cellValue = outputFormat.format(parsedDate);
+                    LOG.info("reformatted date={} to formattedDate={}", safeCellValue, cellValue);
+                    break;
+                } catch (ParseException e) {
+                    LOG.debug("failed to parse date={} with pattern={}", cellValue, inputFormat.toPattern());
+                }
+            }
+        }
+        return cellValue;
     }
 
     private static String extractCategory(String normalizedColumnName,
@@ -227,6 +256,7 @@ public class CsvCategorizeAndMerge {
     public static class CsvOrganizerConfig {
         private LinkedHashMap<String, Set<String>> columnNameToAliases = new LinkedHashMap<>();
         private List<CsvOrganizerCategoryConfig> categoryConfigs = new ArrayList<>();
+        private LinkedHashMap<String, DateTransformerConfig> columnNameToDateTransformer = new LinkedHashMap<>();
         private String defaultCategoryName;
         private String sortColumnName;
         private SortType sortType;
@@ -273,11 +303,16 @@ public class CsvCategorizeAndMerge {
             return categoryConfigs;
         }
 
+        public LinkedHashMap<String, DateTransformerConfig> getColumnNameToDateTransformer() {
+            return columnNameToDateTransformer;
+        }
+
         @Override
         public String toString() {
             return "CsvOrganizerConfig{" +
                     "columnNameToAliases=" + columnNameToAliases +
                     ", categoryConfigs=" + categoryConfigs +
+                    ", columnNameToDateTransformer=" + columnNameToDateTransformer +
                     ", defaultCategoryName='" + defaultCategoryName + '\'' +
                     ", sortColumnName='" + sortColumnName + '\'' +
                     ", sortType=" + sortType +
@@ -287,7 +322,6 @@ public class CsvCategorizeAndMerge {
 
     public static class CsvOrganizerCategoryConfig {
         private String category;
-
         private String columnName;
         private Set<String> regexes;
 
@@ -308,6 +342,7 @@ public class CsvCategorizeAndMerge {
         public Set<String> getRegexes() {
             return regexes;
         }
+
     }
 
     public enum SortType{

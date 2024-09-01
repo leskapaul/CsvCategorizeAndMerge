@@ -22,4 +22,11 @@ columnNameToCategoryConfig:
       - category: Data
         regexes:
           - "verizon.*"
+columnNameToTransformer:
+  - Date:
+      dateTransformer:
+        inputFormats:
+          - "yyyy-MM-dd"
+          - "MM/dd/yyyy"
+        outputFormat: "MM/dd/yyyy"
 

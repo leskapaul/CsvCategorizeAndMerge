@@ -4,13 +4,15 @@ import org.apache.commons.csv.CSVFormat;
 import org.apache.commons.csv.CSVParser;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 
 import static org.junit.Assert.assertEquals;
@@ -36,6 +38,8 @@ public class CsvOrganizingTransformerTest {
         csvParsers.add(CSVParser.parse(getClass().getResourceAsStream("/testCsv2.csv"),
                 StandardCharsets.UTF_8, CSVFormat.DEFAULT.withFirstRecordAsHeader()));
 
+        final SimpleDateFormat simpleDateFormat = new SimpleDateFormat("MM/dd/yyyy");
+
         try {
             List<CsvCategorizeAndMerge.CategoryCsvLines> lines =
                     csvOrganizingTransformer.organizeCsvLines(csvParsers, config);
@@ -52,6 +56,16 @@ public class CsvOrganizingTransformerTest {
             assertEquals("expected 2 lines for data", 1,
                     countLinesForCategory(lines, "Data"));
 
+            lines.forEach(categoryCsvLines -> {
+                categoryCsvLines.getCsvLines().forEach(csvLine -> {
+                    String dateAsStr = csvLine.get("Date");
+                    try {
+                        simpleDateFormat.parse(dateAsStr);
+                    } catch (ParseException e) {
+                        Assert.fail(e.getMessage());
+                    }
+                });
+            });
         } finally {
             for (CSVParser csvParser : csvParsers) {
                 try { csvParser.close(); } catch (Exception e) {

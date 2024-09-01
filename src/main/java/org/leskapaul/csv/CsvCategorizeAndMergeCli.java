@@ -19,6 +19,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import static org.leskapaul.csv.DateTransformerConfig.extractDateTransformerConfig;
+
 public class CsvCategorizeAndMergeCli {
 
     private static final Logger LOG = LogManager.getLogger(CsvCategorizeAndMergeCli.class);
@@ -134,13 +136,15 @@ public class CsvCategorizeAndMergeCli {
         List categoryConfigs = (List) configAsMap.get("columnNameToCategoryConfig");
         if (categoryConfigs != null) {
             categoryConfigs.forEach(map -> {
-                Map.Entry categoryConfigAsMapEntry = (Map.Entry) ((Map) map).entrySet().stream().findFirst().get(); //(Map) categoryConfigs.get(key);
+                Map.Entry categoryConfigAsMapEntry = (Map.Entry) ((Map) map).entrySet().stream().findFirst().get();
                 if (categoryConfigAsMapEntry != null) {
                     String columnName = (String) categoryConfigAsMapEntry.getKey();
+
                     List<Map> categoryConfigsForColumn = (List<Map>) categoryConfigAsMapEntry.getValue();
                     categoryConfigsForColumn.forEach(categoryConfigAsMap -> {
                         String category = (String) categoryConfigAsMap.get("category");
                         List<String> regexes = (List<String>) categoryConfigAsMap.get("regexes");
+
                         if (columnName != null && category != null && regexes != null) {
                             CsvCategorizeAndMerge.CsvOrganizerCategoryConfig categoryConfig =
                                     new CsvCategorizeAndMerge.CsvOrganizerCategoryConfig(category, columnName,
@@ -151,6 +155,21 @@ public class CsvCategorizeAndMergeCli {
                                     columnName, category, regexes);
                         }
                     });
+                }
+            });
+        }
+
+        List transformerConfigs = (List) configAsMap.get("columnNameToTransformer");
+        if (transformerConfigs != null) {
+            transformerConfigs.forEach(map -> {
+                Map.Entry categoryConfigAsMapEntry = (Map.Entry) ((Map) map).entrySet().stream().findFirst().get();
+                if (categoryConfigAsMapEntry != null) {
+                    String columnName = (String) categoryConfigAsMapEntry.getKey();
+                    Map<String, Object> dateTransformerConfigAsMap = (Map<String, Object>) categoryConfigAsMapEntry.getValue();
+                    DateTransformerConfig dateTransformerConfig = extractDateTransformerConfig(dateTransformerConfigAsMap);
+                    if (dateTransformerConfig != null) {
+                        config.getColumnNameToDateTransformer().put(columnName, dateTransformerConfig);
+                    }
                 }
             });
         }
