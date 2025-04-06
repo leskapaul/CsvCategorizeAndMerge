@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Transaction Categories Visualization</title>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(loadData);
+
+      function loadData() {
+        // In a real application, you would load the CSV file using AJAX
+        // For this example, we'll simulate the data
+        
+        // This would be replaced with actual data from your CSV
+        const categoryTotals = {
+          'Groceries': 119.80,
+          'Utilities': 380.62,
+          'Data': 24.99,
+          'Discretionary': 57.89
+        };
+        
+        drawPieChart(categoryTotals);
+        drawBarChart(categoryTotals);
+      }
+
+      function drawPieChart(categoryTotals) {
+        // Convert the data to the format Google Charts expects
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Category');
+        data.addColumn('number', 'Amount');
+        
+        Object.keys(categoryTotals).forEach(function(category) {
+          data.addRow([category, Math.abs(categoryTotals[category])]);
+        });
+
+        var options = {
+          title: 'Monthly Spending by Category',
+          pieHole: 0.4,
+          colors: ['#4285F4', '#DB4437', '#F4B400', '#0F9D58', '#AB47BC', '#00ACC1', '#FF7043'],
+          chartArea: {width: '80%', height: '80%'},
+          legend: {position: 'right'}
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('piechart'));
+        chart.draw(data, options);
+      }
+      
+      function drawBarChart(categoryTotals) {
+        // Convert the data to the format Google Charts expects
+        var data = new google.visualization.DataTable();
+        data.addColumn('string', 'Category');
+        data.addColumn('number', 'Amount');
+        
+        Object.keys(categoryTotals).forEach(function(category) {
+          data.addRow([category, Math.abs(categoryTotals[category])]);
+        });
+
+        var options = {
+          title: 'Spending by Category',
+          chartArea: {width: '70%'},
+          hAxis: {
+            title: 'Amount',
+            minValue: 0
+          },
+          vAxis: {
+            title: 'Category'
+          },
+          colors: ['#4285F4']
+        };
+
+        var chart = new google.visualization.BarChart(document.getElementById('barchart'));
+        chart.draw(data, options);
+      }
+      
+      // This function could be used to parse a CSV file
+      function parseCSV(csvText) {
+        const lines = csvText.split('\n');
+        const categories = {};
+        let currentCategory = null;
+        
+        // Skip header line
+        for (let i = 1; i < lines.length; i++) {
+          const line = lines[i].trim();
+          
+          // Empty line indicates a new category section
+          if (line === '') {
+            currentCategory = null;
+            continue;
+          }
+          
+          // If we don't have a current category, this is the first line of a new section
+          if (currentCategory === null && line !== '') {
+            // We need to determine the category from the configuration
+            // For this example, we'll just use a placeholder
+            currentCategory = "Unknown";
+            continue;
+          }
+          
+          // Process transaction line
+          if (currentCategory) {
+            const columns = line.split(',');
+            if (columns.length >= 3) {
+              const amount = parseFloat(columns[2].replace('$', '').replace(',', ''));
+              if (!isNaN(amount)) {
+                categories[currentCategory] = (categories[currentCategory] || 0) + Math.abs(amount);
+              }
+            }
+          }
+        }
+        
+        return categories;
+      }
+    </script>
+    <style>
+      .chart-container {
+        display: flex;
+        flex-wrap: wrap;
+        justify-content: center;
+        margin-top: 20px;
+      }
+      .chart {
+        width: 600px;
+        height: 400px;
+        margin: 10px;
+        border: 1px solid #ddd;
+        border-radius: 5px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      }
+      h1 {
+        text-align: center;
+        font-family: Arial, sans-serif;
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Transaction Categories Visualization</h1>
+    <div class="chart-container">
+      <div id="piechart" class="chart"></div>
+      <div id="barchart" class="chart"></div>
+    </div>
+  </body>
+</html>

@@ -70,7 +70,66 @@ Date, Description, Amount
 
 ## Usage
 Note: The following usage example references test files. Replace with your own files and have fun!
+
+### Basic Usage
 ```
 mvn package
 java -jar target/CsvCategorizeAndMerge-1.0-SNAPSHOT-jar-with-dependencies.jar src/test/resources/testConfig.yaml src/test/resources/testCsv.csv src/test/resources/testCsv2.csv
+```
+
+### With Output File
+You can specify an output file to save the results:
+```
+java -jar target/CsvCategorizeAndMerge-1.0-SNAPSHOT-jar-with-dependencies.jar src/test/resources/testConfig.yaml src/test/resources/testCsv.csv src/test/resources/testCsv2.csv --output-file output.csv
+```
+
+### With Web Chart Format
+To include category headers in the output for use with visualization tools:
+```
+java -jar target/CsvCategorizeAndMerge-1.0-SNAPSHOT-jar-with-dependencies.jar src/test/resources/testConfig.yaml src/test/resources/testCsv.csv src/test/resources/testCsv2.csv --output-file output.csv --web-chart
+```
+
+### Merging with Existing Data
+If the output file already exists, the program will merge the new transactions with the existing data, removing any duplicates:
+```
+java -jar target/CsvCategorizeAndMerge-1.0-SNAPSHOT-jar-with-dependencies.jar src/test/resources/testConfig.yaml src/test/resources/newTransactions.csv --output-file output.csv
+```
+
+## Google Charts Integration
+The output format is compatible with Google Charts for data visualization. You can use the generated CSV file with Google Charts to create visualizations of your spending patterns.
+
+Example of using the output with Google Charts:
+```html
+<html>
+  <head>
+    <script type="text/javascript" src="https://www.gstatic.com/charts/loader.js"></script>
+    <script type="text/javascript">
+      google.charts.load('current', {'packages':['corechart']});
+      google.charts.setOnLoadCallback(drawChart);
+
+      function drawChart() {
+        // Load CSV data using AJAX or other methods
+        // For this example, we'll use a simple array
+        var data = google.visualization.arrayToDataTable([
+          ['Category', 'Amount'],
+          ['Groceries', 119.80],
+          ['Utilities', 380.62],
+          ['Data', 24.99],
+          ['Discretionary', 57.89]
+        ]);
+
+        var options = {
+          title: 'Monthly Spending by Category',
+          pieHole: 0.4,
+        };
+
+        var chart = new google.visualization.PieChart(document.getElementById('donutchart'));
+        chart.draw(data, options);
+      }
+    </script>
+  </head>
+  <body>
+    <div id="donutchart" style="width: 900px; height: 500px;"></div>
+  </body>
+</html>
 ```

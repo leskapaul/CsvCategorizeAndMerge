@@ -43,7 +43,7 @@ public class CsvOrganizingTransformerTest {
         try {
             List<CsvCategorizeAndMerge.CategoryCsvLines> lines =
                     csvOrganizingTransformer.organizeCsvLines(csvParsers, config);
-            CsvCategorizeAndMergeCli.printCsv(config, lines);
+            CsvCategorizeAndMergeCli.printCsv(config, lines, false);
             LOG.info("result has lines spanning {} categories: {}", lines.size(), lines);
 
             assertEquals("expected lines spanning 4 categories", 4, lines.size());

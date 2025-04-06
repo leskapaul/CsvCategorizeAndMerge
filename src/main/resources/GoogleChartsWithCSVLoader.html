@@ -1,0 +1,308 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Transaction Categories Visualization</title>
+  <script src="https://www.gstatic.com/charts/loader.js"></script>
+  <script src="csv-parser.js"></script>
+  <script src="transaction-analyzer.js"></script>
+  <script src="chart-visualizer.js"></script>
+  <script>
+    // Main application logic
+    let parser, analyzer, visualizer;
+    let currentTransactions = [];
+    
+    function initApp() {
+      parser = new TransactionParser();
+      analyzer = new TransactionAnalyzer();
+      visualizer = new ChartVisualizer();
+      
+      visualizer.onReady(() => {
+        document.getElementById('csvFileInput').addEventListener('change', handleFileSelect);
+        document.getElementById('applyDateFilter').addEventListener('click', applyDateFilter);
+      });
+    }
+    
+    function handleFileSelect(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          currentTransactions = parser.parseCSV(e.target.result);
+          analyzer.setTransactions(currentTransactions);
+          
+          // Set date range inputs
+          const dateRange = parser.getDateRange();
+          if (dateRange.min && dateRange.max) {
+            document.getElementById('startDate').value = formatDate(dateRange.min);
+            document.getElementById('endDate').value = formatDate(dateRange.max);
+          }
+          
+          // Show UI elements
+          document.getElementById('controlsContainer').style.display = 'block';
+          document.getElementById('chartsContainer').style.display = 'flex';
+          
+          updateCharts();
+        } catch (error) {
+          alert('Error parsing CSV: ' + error.message);
+        }
+      };
+      reader.readAsText(file);
+    }
+    
+    function formatDate(date) {
+      return date ? `${date.getMonth() + 1}/${date.getDate()}/${date.getFullYear()}` : '';
+    }
+    
+    function parseDate(dateStr) {
+      if (!dateStr) return null;
+      const parts = dateStr.split('/');
+      if (parts.length === 3) {
+        return new Date(parts[2], parseInt(parts[0]) - 1, parseInt(parts[1]));
+      }
+      return null;
+    }
+    
+    function applyDateFilter() {
+      const startDateStr = document.getElementById('startDate').value;
+      const endDateStr = document.getElementById('endDate').value;
+      
+      let startDate = parseDate(startDateStr);
+      let endDate = parseDate(endDateStr);
+      
+      // Add one day to end date to include the end date in the range
+      if (endDate) {
+        endDate = new Date(endDate);
+        endDate.setDate(endDate.getDate() + 1);
+      }
+      
+      updateCharts(startDate, endDate);
+    }
+    
+    function updateCharts(startDate, endDate) {
+      // Filter transactions by date if specified
+      const filteredTransactions = startDate || endDate ? 
+        analyzer.filterByDateRange(startDate, endDate) : 
+        currentTransactions;
+        
+      analyzer.setTransactions(filteredTransactions);
+      
+      // Get data for charts
+      const categoryTotals = analyzer.getCategoryTotals();
+      const weeklySpending = analyzer.getWeeklySpending();
+      
+      // Draw charts
+      visualizer.drawPieChart(categoryTotals, 'piechart');
+      visualizer.drawBarChart(categoryTotals, 'barchart');
+      visualizer.drawLineChart(weeklySpending, 'linechart');
+      visualizer.drawTransactionTable(filteredTransactions, 'table_div');
+      
+      // Update summary
+      updateSummary(categoryTotals, startDate || parser.getDateRange().min, 
+                   endDate ? new Date(endDate.getTime() - 86400000) : parser.getDateRange().max);
+    }
+    
+    function updateSummary(categoryTotals, startDate, endDate) {
+      const summaryDiv = document.getElementById('summary');
+      
+      // Calculate total spending (negative values are expenses)
+      let totalSpending = 0;
+      Object.values(categoryTotals).forEach(amount => {
+        // Only add negative values (expenses) to total spending
+        if (amount < 0) {
+          totalSpending += amount;
+        }
+      });
+      
+      // Format dates
+      const formattedStartDate = formatDate(startDate);
+      const formattedEndDate = formatDate(endDate);
+      
+      // Create summary HTML
+      let html = `
+        <h3>Summary (${formattedStartDate} - ${formattedEndDate})</h3>
+        <p>Total Spending: $${(-totalSpending).toFixed(2)}</p>
+        <h4>Spending by Category:</h4>
+        <ul>
+      `;
+      
+      // Sort categories by amount (most negative first, as those are the biggest expenses)
+      const sortedCategories = Object.keys(categoryTotals).sort((a, b) => 
+        categoryTotals[a] - categoryTotals[b]
+      );
+      
+      sortedCategories.forEach(category => {
+        const amount = categoryTotals[category];
+        // Only show percentage for expenses (negative values)
+        let percentageText = '';
+        if (amount < 0 && totalSpending < 0) {
+          const percentage = ((amount / totalSpending) * 100).toFixed(1);
+          percentageText = ` (${percentage}%)`;
+        }
+        html += `<li>${category}: $${amount.toFixed(2)}${percentageText}</li>`;
+      });
+      
+      html += '</ul>';
+      summaryDiv.innerHTML = html;
+    }
+    
+    // Initialize when page loads
+    window.addEventListener('load', initApp);
+  </script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      color: #333;
+    }
+    .file-input-container {
+      text-align: center;
+      margin: 20px 0;
+      padding: 20px;
+      border: 2px dashed #ccc;
+      border-radius: 5px;
+    }
+    .controls-container {
+      display: none;
+      margin: 20px 0;
+      padding: 15px;
+      background-color: #f5f5f5;
+      border-radius: 5px;
+    }
+    .date-range {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+    .date-range label {
+      font-weight: bold;
+    }
+    .date-range input {
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    .charts-container {
+      display: none;
+      flex-wrap: wrap;
+      justify-content: center;
+      margin-top: 20px;
+    }
+    .chart {
+      width: 600px;
+      height: 400px;
+      margin: 10px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      position: relative;
+    }
+    .wide-chart {
+      width: 1200px;
+    }
+    .table-container {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 1200px;
+    }
+    .summary-container {
+      margin: 20px auto;
+      width: 90%;
+      max-width: 1200px;
+      padding: 15px;
+      background-color: #f9f9f9;
+      border-radius: 5px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #333;
+    }
+    .instructions {
+      max-width: 600px;
+      margin: 0 auto;
+      line-height: 1.5;
+    }
+    #summary ul {
+      columns: 2;
+      -webkit-columns: 2;
+      -moz-columns: 2;
+    }
+    .no-data {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      color: #999;
+      font-style: italic;
+      text-align: center;
+      width: 80%;
+    }
+    button {
+      padding: 8px 16px;
+      background-color: #4285F4;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #3367D6;
+    }
+    @media (max-width: 768px) {
+      #summary ul {
+        columns: 1;
+        -webkit-columns: 1;
+        -moz-columns: 1;
+      }
+      .chart {
+        width: 95%;
+      }
+    }
+  </style>
+</head>
+<body>
+  <h1>Transaction Categories Visualization</h1>
+  
+  <div class="instructions">
+    <p>Upload a CSV file generated by the CsvCategorizeAndMerge tool to visualize your spending by category.</p>
+    <p>The CSV should contain at least the following columns: Date, Description, and Amount.</p>
+    <p>Categories are determined by the [category=CategoryName] markers in the CSV file.</p>
+  </div>
+  
+  <div class="file-input-container">
+    <input type="file" id="csvFileInput" accept=".csv" />
+    <p>Select your categorized CSV file</p>
+  </div>
+  
+  <div id="controlsContainer" class="controls-container">
+    <div class="date-range">
+      <label for="startDate">Start Date:</label>
+      <input type="text" id="startDate" placeholder="MM/DD/YYYY" />
+      
+      <label for="endDate">End Date:</label>
+      <input type="text" id="endDate" placeholder="MM/DD/YYYY" />
+      
+      <button id="applyDateFilter">Apply Filter</button>
+    </div>
+  </div>
+  
+  <div class="summary-container">
+    <div id="summary">
+      <!-- Summary will be populated here -->
+    </div>
+  </div>
+  
+  <div id="chartsContainer" class="charts-container">
+    <div id="piechart" class="chart"></div>
+    <div id="barchart" class="chart"></div>
+    <div id="linechart" class="chart wide-chart"></div>
+  </div>
+  
+  <div class="table-container">
+    <div id="table_div"></div>
+  </div>
+</body>
+</html>
